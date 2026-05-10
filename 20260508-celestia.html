@@ -1,4 +1,639 @@
 <!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FusuinoMegami｜間取り診断サンプル</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600;700&family=Shippori+Mincho:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --tiffany: #81D8D0;
+    --tiffany-dark: #5BBFB7;
+    --tiffany-light: #B8EAE6;
+    --gold: #C9A84C;
+    --gold-light: #E8C97A;
+    --dark: #0D1B2A;
+    --dark-mid: #162233;
+    --text: #E8EDF2;
+    --text-muted: #8FA3B1;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Noto Serif JP', serif;
+    line-height: 1.8;
+    min-height: 100vh;
+  }
+
+  /* 星空背景 */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse at 20% 50%, rgba(129,216,208,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(201,168,76,0.05) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 100%, rgba(129,216,208,0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ヘッダー */
+  .header {
+    text-align: center;
+    padding: 60px 0 40px;
+    position: relative;
+  }
+
+  .header::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 32px auto 0;
+  }
+
+  .logo {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 13px;
+    letter-spacing: 0.4em;
+    color: var(--tiffany);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    opacity: 0.8;
+  }
+
+  .title {
+    font-family: 'Shippori Mincho', serif;
+    font-size: clamp(26px, 5vw, 38px);
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--tiffany-light), var(--tiffany), var(--gold-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 0.15em;
+  }
+
+  /* 物件情報カード */
+  .property-card {
+    background: linear-gradient(135deg, rgba(129,216,208,0.08), rgba(201,168,76,0.05));
+    border: 1px solid rgba(129,216,208,0.2);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin: 40px 0 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .property-card::before {
+    content: '物件情報';
+    position: absolute;
+    top: -1px;
+    left: 24px;
+    background: linear-gradient(90deg, var(--tiffany), var(--tiffany-dark));
+    color: var(--dark);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    padding: 4px 14px;
+    border-radius: 0 0 8px 8px;
+  }
+
+  .property-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 24px;
+    margin-top: 8px;
+  }
+
+  .property-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .property-label {
+    font-size: 11px;
+    color: var(--tiffany);
+    letter-spacing: 0.15em;
+    opacity: 0.7;
+  }
+
+  .property-value {
+    font-size: 15px;
+    color: var(--text);
+  }
+
+  /* 診断セクション */
+  .section {
+    margin: 32px 0;
+    animation: fadeUp 0.6s ease forwards;
+    opacity: 0;
+  }
+
+  .section:nth-child(1) { animation-delay: 0.1s; }
+  .section:nth-child(2) { animation-delay: 0.2s; }
+  .section:nth-child(3) { animation-delay: 0.3s; }
+  .section:nth-child(4) { animation-delay: 0.4s; }
+  .section:nth-child(5) { animation-delay: 0.5s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(129,216,208,0.15);
+  }
+
+  .section-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, rgba(129,216,208,0.2), rgba(129,216,208,0.05));
+    border: 1px solid rgba(129,216,208,0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--tiffany-light);
+    letter-spacing: 0.05em;
+  }
+
+  .section-badge {
+    margin-left: auto;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    border: 1px solid rgba(201,168,76,0.3);
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  /* 診断アイテム */
+  .diagnosis-item {
+    background: rgba(255,255,255,0.03);
+    border-left: 2px solid var(--tiffany);
+    border-radius: 0 10px 10px 0;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+
+  .diagnosis-item.warning {
+    border-left-color: var(--gold);
+  }
+
+  .diagnosis-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--tiffany);
+    margin-bottom: 6px;
+    letter-spacing: 0.05em;
+  }
+
+  .diagnosis-item.warning .diagnosis-label {
+    color: var(--gold-light);
+  }
+
+  .diagnosis-text {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.7;
+    margin-bottom: 8px;
+  }
+
+  .diagnosis-action {
+    font-size: 13px;
+    color: var(--tiffany);
+    padding: 8px 12px;
+    background: rgba(129,216,208,0.07);
+    border-radius: 6px;
+    margin-top: 8px;
+  }
+
+  .diagnosis-action::before {
+    content: '→ 対策：';
+    font-weight: 600;
+  }
+
+  /* 総合評価 */
+  .rating-card {
+    background: linear-gradient(135deg, rgba(201,168,76,0.1), rgba(129,216,208,0.05));
+    border: 1px solid rgba(201,168,76,0.25);
+    border-radius: 16px;
+    padding: 28px 32px;
+    text-align: center;
+    margin: 32px 0;
+  }
+
+  .rating-title {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 13px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    margin-bottom: 16px;
+  }
+
+  .stars {
+    font-size: 32px;
+    letter-spacing: 4px;
+    margin-bottom: 16px;
+  }
+
+  .rating-comment {
+    font-size: 14px;
+    color: var(--text-muted);
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.8;
+  }
+
+  /* 改善提案 */
+  .improvement-grid {
+    display: grid;
+    gap: 12px;
+  }
+
+  .improvement-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 20px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: border-color 0.3s;
+  }
+
+  .improvement-item:hover {
+    border-color: rgba(129,216,208,0.2);
+  }
+
+  .improvement-icon {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, var(--tiffany), var(--tiffany-dark));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .improvement-text {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  .improvement-category {
+    font-size: 11px;
+    color: var(--tiffany);
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+    opacity: 0.7;
+  }
+
+  /* 総評 */
+  .summary-card {
+    background: linear-gradient(135deg, rgba(129,216,208,0.1), rgba(22,34,51,0.8));
+    border: 1px solid rgba(129,216,208,0.25);
+    border-radius: 16px;
+    padding: 32px;
+    margin: 32px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .summary-card::before {
+    content: '🌙';
+    position: absolute;
+    right: 24px;
+    top: 24px;
+    font-size: 32px;
+    opacity: 0.3;
+  }
+
+  .summary-title {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--tiffany-light);
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+  }
+
+  .summary-text {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.9;
+  }
+
+  /* CTAセクション */
+  .cta-section {
+    text-align: center;
+    padding: 48px 32px;
+    background: linear-gradient(135deg, rgba(129,216,208,0.08), rgba(201,168,76,0.05));
+    border: 1px solid rgba(129,216,208,0.2);
+    border-radius: 20px;
+    margin-top: 48px;
+  }
+
+  .cta-moon {
+    font-size: 40px;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .cta-title {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--tiffany-light);
+    margin-bottom: 12px;
+  }
+
+  .cta-text {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+    line-height: 1.8;
+  }
+
+  .cta-button {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--tiffany), var(--tiffany-dark));
+    color: var(--dark);
+    font-family: 'Shippori Mincho', serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 16px 40px;
+    border-radius: 50px;
+    text-decoration: none;
+    transition: all 0.3s;
+    box-shadow: 0 4px 20px rgba(129,216,208,0.3);
+  }
+
+  .cta-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(129,216,208,0.4);
+  }
+
+  .cta-note {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 20px;
+    opacity: 0.7;
+  }
+
+  /* フッター */
+  .footer {
+    text-align: center;
+    padding: 40px 0 0;
+    font-size: 12px;
+    color: var(--text-muted);
+    opacity: 0.5;
+    letter-spacing: 0.1em;
+  }
+
+  /* 区切り線 */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(129,216,208,0.2), transparent);
+    margin: 8px 0;
+  }
+
+  @media (max-width: 480px) {
+    .property-grid { grid-template-columns: 1fr; }
+    .container { padding: 0 16px 60px; }
+    .rating-card, .summary-card, .cta-section { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ヘッダー -->
+  <header class="header">
+    <div class="logo">FusuinoMegami × 間取り診断</div>
+    <h1 class="title">診断レポート<br>サンプル</h1>
+    <p class="subtitle">風水環境診断メソッドによる実例</p>
+  </header>
+
+  <!-- 物件情報 -->
+  <div class="property-card">
+    <div class="property-grid">
+      <div class="property-item">
+        <span class="property-label">エリア</span>
+        <span class="property-value">東京都世田谷区</span>
+      </div>
+      <div class="property-item">
+        <span class="property-label">間取り</span>
+        <span class="property-value">2LDK（55㎡）</span>
+      </div>
+      <div class="property-item">
+        <span class="property-label">玄関の向き</span>
+        <span class="property-value">北東（鬼門）</span>
+      </div>
+      <div class="property-item">
+        <span class="property-label">居住者</span>
+        <span class="property-value">30代・一人暮らし女性</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 方位軸 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">🧭</div>
+      <h2 class="section-title">方位軸の診断</h2>
+      <span class="section-badge">DIRECTION</span>
+    </div>
+
+    <div class="diagnosis-item">
+      <div class="diagnosis-label">玄関：北東向き（鬼門）</div>
+      <div class="diagnosis-text">気の入口が不安定になりやすい方位です。鬼門は気のエネルギーが乱れやすく、住人の運気に影響を与えます。</div>
+      <div class="diagnosis-action">観葉植物・明るい照明を置き、常に清潔に保つことで気の乱れを和らげられます</div>
+    </div>
+
+    <div class="diagnosis-item">
+      <div class="diagnosis-label">寝室：北西向き</div>
+      <div class="diagnosis-text">落ち着いた気が流れ、安眠に適した良好な方位です。深い休息が取れる環境が整っています。</div>
+      <div class="diagnosis-action">頭を北に向けて眠ることで、さらに安眠効果が高まります</div>
+    </div>
+
+    <div class="diagnosis-item warning">
+      <div class="diagnosis-label">水回り：南西（裏鬼門）</div>
+      <div class="diagnosis-text">鬼門と裏鬼門の両方に水回りが位置しており、気の乱れが生じやすい配置です。特に注意が必要なポイントです。</div>
+      <div class="diagnosis-action">換気を毎日徹底し、清潔を保つことが最重要。塩を小皿に置くのも有効です</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 空間軸 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">🏠</div>
+      <h2 class="section-title">空間軸の診断</h2>
+      <span class="section-badge">SPACE</span>
+    </div>
+
+    <div class="diagnosis-item">
+      <div class="diagnosis-label">間取りの形：長方形</div>
+      <div class="diagnosis-text">気の流れが安定しやすい理想的な形です。凹凸のない長方形は風水的に非常に良好とされています。</div>
+    </div>
+
+    <div class="diagnosis-item">
+      <div class="diagnosis-label">リビング：南向き</div>
+      <div class="diagnosis-text">朝の清らかな気が入りやすく、活力が生まれる配置です。対人運・仕事運の向上が期待できる良好なポジションです。</div>
+    </div>
+
+    <div class="diagnosis-item warning">
+      <div class="diagnosis-label">気になる点：玄関から窓が一直線</div>
+      <div class="diagnosis-text">玄関を開けると正面に窓が見える配置は、入ってきた良い気がそのまま外へ抜けてしまいます。「通り抜け」と呼ばれる気の損失が起きやすい状態です。</div>
+      <div class="diagnosis-action">玄関と窓の間に観葉植物や家具を置き、気の流れを緩めましょう</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 環境軸 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">🌿</div>
+      <h2 class="section-title">環境軸の診断</h2>
+      <span class="section-badge">ENVIRONMENT</span>
+    </div>
+
+    <div class="diagnosis-item">
+      <div class="diagnosis-label">周辺環境：南側に公園が隣接</div>
+      <div class="diagnosis-text">緑のエネルギーが継続的に取り込まれる、非常に恵まれた環境です。自然の気が住まい全体を浄化してくれます。</div>
+    </div>
+
+    <div class="diagnosis-item warning">
+      <div class="diagnosis-label">道路：東側に幹線道路</div>
+      <div class="diagnosis-text">気が速く流れすぎる傾向があります。活発なエネルギーが入りやすい反面、落ち着きを損なうこともあります。</div>
+      <div class="diagnosis-action">東側の窓にカーテンをこまめに閉める習慣をつけましょう</div>
+    </div>
+
+    <div class="diagnosis-item">
+      <div class="diagnosis-label">日当たり・風通し：南向きで良好</div>
+      <div class="diagnosis-text">自然光と風通しが気を常に浄化してくれます。この物件の大きな強みのひとつです。</div>
+    </div>
+  </div>
+
+  <!-- 総合評価 -->
+  <div class="rating-card">
+    <div class="rating-title">総 合 評 価</div>
+    <div class="stars">★★★★☆</div>
+    <div class="rating-comment">
+      全体的にポテンシャルの高い物件です。<br>
+      公園隣接・南向きリビングという環境的強みを持ちながら、<br>
+      鬼門・裏鬼門への対策を丁寧に行うことで<br>
+      運気の安定と向上が期待できます。
+    </div>
+  </div>
+
+  <!-- 改善提案 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">✨</div>
+      <h2 class="section-title">改善提案</h2>
+      <span class="section-badge">IMPROVEMENT</span>
+    </div>
+
+    <div class="improvement-grid">
+      <div class="improvement-item">
+        <div class="improvement-icon">①</div>
+        <div>
+          <div class="improvement-category">今すぐできること</div>
+          <div class="improvement-text">玄関に観葉植物を置く・水回りの換気を毎日行う・玄関と窓の間に家具を配置する</div>
+        </div>
+      </div>
+      <div class="improvement-item">
+        <div class="improvement-icon">②</div>
+        <div>
+          <div class="improvement-category">インテリアで改善</div>
+          <div class="improvement-text">リビングに暖色系のクッション・ラグを取り入れる。寝室のカーテンを落ち着いた色（紺・深緑）に変える</div>
+        </div>
+      </div>
+      <div class="improvement-item">
+        <div class="improvement-icon">③</div>
+        <div>
+          <div class="improvement-category">習慣で改善</div>
+          <div class="improvement-text">毎朝玄関を掃き清める。週1回の換気・掃除を徹底する。塩を小皿に置いて定期的に交換する</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 総評 -->
+  <div class="summary-card">
+    <div class="summary-title">総　評</div>
+    <div class="summary-text">
+      公園隣接という環境的な強みを最大限に活かした住まいづくりをおすすめします。鬼門・裏鬼門への対策は、難しいものではありません。日々の清潔と換気という小さな習慣の積み重ねが、住まいのエネルギーを整えていきます。<br><br>
+      風水とは、占いではありません。<br>
+      環境が人の心理・行動・運気に与える影響を体系化した「環境学」です。<br>
+      この物件は、正しく整えることで、あなたの暮らしを力強く支えてくれるはずです。🌙
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-section">
+    <span class="cta-moon">🌙</span>
+    <h2 class="cta-title">あなたの間取り、診断します</h2>
+    <p class="cta-text">
+      間取り図1枚を送るだけで<br>
+      風水×宅建士の視点から<br>
+      あなたに合う家かどうかを診断します
+    </p>
+    <a href="https://coconala.com/services/4187657" class="cta-button">
+      ここナラで診断を依頼する →
+    </a>
+    <p class="cta-note">診断結果は3日以内にお送りします｜3,500円</p>
+  </div>
+
+  <footer class="footer">
+    <p>© FusuinoMegami｜風水環境診断メソッド</p>
+  </footer>
+
+</div><!DOCTYPE html>
 
 <html lang="ja">
 <head>
